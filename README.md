@@ -67,17 +67,21 @@ tileManager->save("sparse.ply");
 The pointcloud file can be opened with softwares like meshlab.
 
 ### 2.4. Parameters
+The sample use [Svar](http://zhaoyong.adv-ci.com/softwares/pibase/) to config parameters. Users can modify the "Default.cfg" file or use code to set parameters.
 
-SLAM.isOnline = 0 // 0: offline 2: online
-SLAM.nFeature = 1000 // 1000-4000 desired keypoint number
-SLAM.LostRestart=10  // seconds slam tryed to relocalize
-SLAM.MaxOverlap=0.92 // Overlap percentage
+Some of Parameters used by RTMapperSDK are listed below:
 
-Map2DFusion.CacheFolder= .   // the folder need to be edited mannally
-Map2DFusion.Coordinate = GPS // GCJ for GaoDe and GoogleChina
-Map2DFusion.MaxZoom    = 19  // The map level of Map2DFusion
-Map2DFusion.Thread     = 0   // 0: offline datasets 1: online datasets
-Map2DFusion.CacheMB    = 1000// size of map cache, should not be too small
+| ParameterName | Default | Area | Description|
+| --|--|--|--|--|
+|SLAM.isOnline | 0 |0: offline 2: online||
+|SLAM.nFeature | 1000|1000-4000| desired keypoint number|
+|SLAM.LostRestart| 10 | 0-1e10| seconds slam tryed to relocalize|
+|SLAM.MaxOverlap|0.92 |0.7-0.99| Overlap percentage|
+|Map2DFusion.CacheFolder| .  ||the folder need to be edited mannally|
+|Map2DFusion.Coordinate | GPS |GPS GCJ | GCJ for GaoDe and GoogleChina|
+|Map2DFusion.MaxZoom    | 19  |17-23| The map level of Map2DFusion|
+|Map2DFusion.Thread     | 0   | 0: offline datasets 1: online datasets||
+|Map2DFusion.CacheMB    | 1000|200-8000|size of map cache, should not be too small|
 
 
 
