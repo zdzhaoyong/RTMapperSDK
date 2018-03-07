@@ -72,7 +72,7 @@ The sample use [Svar](http://zhaoyong.adv-ci.com/softwares/pibase/) to config pa
 Some of Parameters used by RTMapperSDK are listed below.
 
 | Parameter Name        | Default | Interval | Description|
-| --|--|--|--|
+| ---- |----|----|----|
 |SLAM.isOnline          | 0     |           |0: offline 2: online|
 |SLAM.nFeature          | 1000  |1000-4000  | desired keypoint number|
 |SLAM.LostRestart       | 10    | 0-1e10    | seconds slam tryed to relocalize|
