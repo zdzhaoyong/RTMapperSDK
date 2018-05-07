@@ -1,15 +1,14 @@
+
 #include <GSLAM/core/Dataset.h>
-#include "GSLAM/core/VecParament.h"
-#include "GSLAM/core/Timer.h"
+#include <GSLAM/core/VecParament.h>
+#include <GSLAM/core/Timer.h>
 #include <GSLAM/core/XML.h>
 #include <GSLAM/core/GPS.h>
 
-#include <QImage>
-#include <QFileInfo>
-#include <QDir>
-#include <QDateTime>
-
 #include "TinyEXIF.h"
+
+#include "GImageIO/GImage_IO.h"
+#include "utils.h"
 
 using namespace std;
 using namespace GSLAM;
@@ -112,22 +111,7 @@ public:
 
 
     static GImage imread(std::string _imagePath){
-        QImage qimage(_imagePath.c_str());
-        if(qimage.format()==QImage::Format_RGB32)
-        {
-            return GImage(qimage.height(),qimage.width(),
-                           GImageType<uchar,4>::Type,qimage.bits(),true);
-        }
-        else if(qimage.format()==QImage::Format_RGB888){
-            return GImage(qimage.height(),qimage.width(),
-                           GImageType<uchar,3>::Type,qimage.bits(),true);
-        }
-        else if(qimage.format()==QImage::Format_Indexed8)
-        {
-            return GImage(qimage.height(),qimage.width(),
-                           GImageType<uchar,1>::Type,qimage.bits(),true);
-        }
-        return GImage();
+        return GSLAM::imread(_imagePath.c_str());
     }
 
     std::string imagePath(){return _imagePath;}
@@ -158,19 +142,22 @@ public:
     virtual FramePtr    grabFrame()
     {
         if(_curIdx>=_imageFiles.size()) return FramePtr();
+
         string imgFile=_imageFiles[_curIdx++];
-        QFileInfo imgPath(imgFile.c_str());
-        QString  refPath=_topDir+"/"+imgFile.c_str();
-        if(!imgPath.exists()&&QFileInfo(refPath).exists()) imgFile=refPath.toStdString();
+        string refPath = _topDir + "/" + imgFile;
+        if( !path_exist(imgFile) && path_exist(refPath) ) imgFile = refPath;
+
+        printf("load frame[%4d] %s\n", _curIdx, imgFile.c_str());
+
         TinyEXIF::EXIF exif;
         GSLAM::Svar    var;
         if(exif.parseFile(imgFile,var)<0) return FramePtr();
 
         string dataTime=var.GetString("DateTime","");
         double Timestamp=var.GetDouble("Timestamp",0);
-        if(dataTime.size()&&!Timestamp)
+        if( dataTime.size() && !Timestamp )
         {
-            Timestamp=QDateTime::fromString(dataTime.c_str(), "yyyy:MM:dd hh:mm:ss").toMSecsSinceEpoch()/1000;
+            Timestamp = tm_getTimeStamp(dataTime.c_str(), "%Y:%m:%d %H:%M%S");
         }
 
         vector<double> gpsInfo;
@@ -220,6 +207,7 @@ public:
         frame->_camera=_cameraMap[frame->_cameraName];
         frame->_gpshpyr=gpsInfo;
         frame->_image=RTMapperFrame::imread(imgFile);
+
         return frame;
     }
 
@@ -237,14 +225,17 @@ public:
     {
         _imageFiles.clear();
         _curIdx=0;
-        QFileInfo fileinfo(dataset.c_str());
-        if(!fileinfo.exists()) return false;
-        _name=fileinfo.baseName().toStdString();
-        if(fileinfo.suffix()=="imgs")
+
+        if( !path_exist(dataset) ) return false;
+
+        _name = path_getFileBase(dataset);
+        string extname = path_getFileExt(dataset);
+        if( extname == ".imgs" )
         {
-            _topDir=fileinfo.absoluteDir().absolutePath();
+            _topDir = path_getPathName(dataset);
             return openImages(dataset);
         }
+
         return false;
     }
 
@@ -253,7 +244,7 @@ public:
         return _curIdx/(float)_imageFiles.size();
     } // -1-->1
 
-    QString                             _topDir;
+    std::string                         _topDir;
     std::map<std::string,Camera>        _cameraMap;
     std::vector<std::string>            _imageFiles;
     int                                 _curIdx;
@@ -281,6 +272,7 @@ public:
         var.ParseFile(path+"/config.cfg");
         plane=var.get_var<pi::SE3d>("Plane",plane);
         origin=var.get_var("GPS.Origin",origin);
+
         // Local to ECEF
         local2ECEF.get_translation()=GSLAM::GPS<>::GPS2XYZ(Point3d(origin.y,origin.x,origin.z));
         double D2R=3.1415925/180.;
@@ -328,14 +320,18 @@ public:
         DroneMapFrame& df=frames[frameId];
         SPtr<RTMapperFrame> fr(new RTMapperFrame(frameId,df.timestamp));
 
+        printf("load frame[%4d] %s\n", frameId, df.imagePath.c_str());
+
         fr->_image=RTMapperFrame::imread(df.imagePath);
         fr->_camera=camera;
+
         GSLAM::SE3 pose=local2ECEF*df.pose;
         GSLAM::Point3d lla=GSLAM::GPS<>::XYZ2GPS(pose.get_translation());
         fr->_gpshpyr=std::vector<double>({lla.y,lla.x,lla.z,5.,5.,10.});
 
         return fr;
     }
+
     string          datasetPath;
     GSLAM::SE3      plane,local2ECEF;
     Point3d         origin;
