@@ -1,43 +1,21 @@
-#include "Visualizer.h"
-#include "QApplication"
-#include <QFileInfo>
-#include <QDir>
+
 #include <GSLAM/core/Dataset.h>
 #include <GSLAM/core/Timer.h>
+#include <GSLAM/core/TileManager.h>
 #include <RTMapper.h>
+
+#include "../libs/utils.h"
 
 class System: public GSLAM::GObjectHandle
 {
 public:
     System(){
-        _vis=Visualizer::create(NULL);
-        if(_vis) _vis->show();
         if(!svar.exist("Map2DFusion.CacheFolder"))
             svar.insert("Map2DFusion.CacheFolder","cache");
-        QString cacheFolder=svar.GetString("Map2DFusion.CacheFolder","cache").c_str();
-        DelDir(cacheFolder);
-        QDir(cacheFolder).mkdir(cacheFolder);
-    }
 
-    bool DelDir(const QString &path)
-    {
-        if (path.isEmpty()){
-            return false;
-        }
-        QDir dir(path);
-        if(!dir.exists()){
-            return true;
-        }
-        dir.setFilter(QDir::AllEntries | QDir::NoDotAndDotDot);
-        QFileInfoList fileList = dir.entryInfoList();
-        foreach (QFileInfo file, fileList){
-            if (file.isFile()){
-                file.dir().remove(file.fileName());
-            }else{
-                DelDir(file.absoluteFilePath());
-            }
-        }
-        return dir.rmpath(dir.absolutePath());
+        std::string cacheFolder = svar.GetString("Map2DFusion.CacheFolder","cache");
+        path_rmdir(cacheFolder);
+        path_mkdir(cacheFolder);
     }
 
     void run(){
@@ -51,11 +29,8 @@ public:
             LOG(ERROR)<<"Failed to open Dataset "<<svar.GetString("Dataset","");
             return ;
         }
-#ifdef RTMAPPER_PLUGIN
-        RTMapperPtr rtmapper=RTMapper::create(svar.GetString("RTMapper","libRTMapperSDK"));
-#else
+
         RTMapperPtr rtmapper=createRTMapperInstance();
-#endif
         if(!rtmapper) {
             LOG(ERROR)<<"Failed to load RTMapperSDK.";
             return;
@@ -84,6 +59,7 @@ public:
                 LOG(ERROR)<<"Camera not valid.";
                 break;
             }
+
             if(isFirstFrame){
                 isFirstFrame=false;
                 GSLAM::Point3d lla;
@@ -91,12 +67,6 @@ public:
                     LOG(ERROR)<<"No GPS information.";
                     break;
                 }
-                if(_vis)
-                {
-                    _vis->setHomeGPSPosition(lla);
-                    _vis->goHome();
-                }
-
             }
             rtmapper->track(frame);
         }
@@ -110,7 +80,6 @@ public:
     virtual void handle(const SPtr<GSLAM::GObject>& obj){
         if(auto tileManager=std::dynamic_pointer_cast<GSLAM::TileManager>(obj)){
             _tileManager=tileManager;
-            if(_vis) _vis->showTileManager(_tileManager);
         }
         else if(auto map=std::dynamic_pointer_cast<GSLAM::Map>(obj))
         {
@@ -120,7 +89,6 @@ public:
     }
 
     GSLAM::Dataset          _dataset;
-    SPtr<Visualizer>        _vis;
     GSLAM::TileManagerPtr   _tileManager;
     GSLAM::MapPtr           _map;
 };
@@ -128,14 +96,11 @@ public:
 int main(int argc,char** argv)
 {
     svar.ParseMain(argc,argv);
-    QApplication app(argc,argv);
 
     System sys;
-    std::thread processThread(&System::run,&sys);
+    sys.run();
 
-    int ret=app.exec();
-    processThread.join();
-    return ret;
+    return 0;
 }
 
 

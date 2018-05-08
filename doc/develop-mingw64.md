@@ -4,5 +4,5 @@
 2. Compile use cmake:
 
 ```
-mkdir build;cd build;cmake ..;make ;
+mkdir build; cd build; cmake ..; make ;
 ```

@@ -1,4 +1,4 @@
-set(CMAKE_PREFIX_PATH D:/Qt/Qt5.9.4/5.9.4/msvc2017_64) # enable this line to decide which version of Qt to find
+set(CMAKE_PREFIX_PATH E:/Qt/Qt5.9.4/5.9.4/msvc2017_64) # enable this line to decide which version of Qt to find
 
 find_package(Qt4)
 
