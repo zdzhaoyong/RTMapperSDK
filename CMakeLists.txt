@@ -15,6 +15,8 @@ if(NOT MSVC)
 
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wl,--retain-symbols-file=${CMAKE_CURRENT_LIST_DIR}/cmake/static_export.sym")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wl,--version-script=${CMAKE_CURRENT_LIST_DIR}/cmake/shared_export.map")
+
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/bin/lnx)
 else()
     set(CMAKE_CXX_FLAGS "-D_CRT_SECURE_NO_WARNINGS /EHsc")
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/bin/vs)
