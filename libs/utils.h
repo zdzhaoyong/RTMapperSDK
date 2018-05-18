@@ -5,9 +5,12 @@
 #include <string>
 #include <vector>
 
+
 ////////////////////////////////////////////////////////////////////////////////
 /// string utils
 ////////////////////////////////////////////////////////////////////////////////
+
+// string array type
 typedef std::vector<std::string> StringArray;
 
 
@@ -70,6 +73,30 @@ std::string trim(const std::string &s);
 std::string& trim2(std::string& s);
 
 
+/**
+ * @brief trim a string in left side, return a trimed string
+ * @param s             - [in] input string
+ *
+ * @return trimed string
+ */
+std::string ltrim(const std::string &s);
+
+/**
+ * @brief trim a string in right side, return a trimed string
+ * @param s             - [in] input string
+ *
+ * @return trimed string
+ */
+std::string rtrim(const std::string &s);
+
+
+
+// string to int, float, double
+int    str_to_int(const std::string &s);
+float  str_to_float(const std::string &s);
+double str_to_double(const std::string &s);
+
+
 ////////////////////////////////////////////////////////////////////////////////
 /// time utils
 ////////////////////////////////////////////////////////////////////////////////
@@ -99,6 +126,16 @@ void tm_sleep(uint32_t t);
 void tm_sleep_us(uint64_t t);
 
 
+////////////////////////////////////////////////////////////////////////////////
+/// file utils
+////////////////////////////////////////////////////////////////////////////////
+
+// text file function
+int readlines(const std::string &fn, StringArray &lns, int bufSize=8192);
+
+// get file length
+uint64_t filelength(FILE *fp);
+uint64_t filelength(const char *fname);
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -114,6 +151,17 @@ int path_mkdir(const std::string& path);
 // remove a path (support sub-dir or files)
 int path_rmdir(const std::string& path);
 
+// remove a file
+int path_rmfile(const std::string& path);
+
+// determin given path is dir/file
+int path_isdir(const std::string &p);
+int path_isdir(const std::string &p);
+
+// list given path
+int path_lsdir(const std::string &dir_name, StringArray &dl, int sortFiles=1);
+
+
 
 // get file name from a given path
 std::string path_getFileName(const std::string& fname);
@@ -126,6 +174,13 @@ std::string path_getFileBase(const std::string& fname);
 std::string path_getFileExt(const std::string& fname);
 
 
+// split path & file name
+StringArray path_split(const std::string &fname);
+StringArray path_splitext(const std::string &fname);
+
+std::string path_join(const std::string &p1, const std::string &p2);
+std::string path_join(const std::string &p1, const std::string &p2, const std::string &p3);
+std::string path_join(const StringArray &p);
 
 #endif // end of __UTILS_H__
 

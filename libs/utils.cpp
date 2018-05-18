@@ -3,6 +3,7 @@
 #include <time.h>
 #include <string.h>
 #include <string>
+#include <algorithm>
 
 #include "utils.h"
 
@@ -151,6 +152,54 @@ std::string& trim2(std::string& s)
 }
 
 
+// string trim functions
+std::string ltrim(const std::string &s)
+{
+    std::string             delims = " \t\n\r",
+                            r;
+    std::string::size_type  i;
+
+    i = s.find_first_not_of(delims);
+    if( i == std::string::npos )
+        r = "";
+    else
+        r = s.substr(i, s.size() - i);
+
+    return r;
+}
+
+
+std::string rtrim(const std::string &s)
+{
+    std::string             delims = " \t\n\r",
+                            r;
+    std::string::size_type  i;
+
+    i = s.find_last_not_of(delims);
+    if( i == std::string::npos )
+        r = "";
+    else
+        r = s.substr(0, i+1);
+
+    return r;
+}
+
+
+int str_to_int(const std::string &s)
+{
+    return atoi(s.c_str());
+}
+
+float str_to_float(const std::string &s)
+{
+    return atof(s.c_str());
+}
+
+double str_to_double(const std::string &s)
+{
+    return atof(s.c_str());
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 /// time utils
@@ -164,6 +213,8 @@ int64_t time_utc(struct tm *tm);
 #include <io.h>
 #include <time.h>
 #include <ctype.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 uint64_t tm_get_millis(void)
 {
@@ -648,6 +699,85 @@ double tm_getTimeStamp(const char* dtStr, const char* fmt)
 
 
 ////////////////////////////////////////////////////////////////////////////////
+/// file utils
+////////////////////////////////////////////////////////////////////////////////
+
+int readlines(const std::string &fn, StringArray &lns, int bufSize)
+{
+    FILE        *fp=NULL;
+    char        *buf;
+    std::string s;
+
+    // clear old data
+    lns.clear();
+
+    // alloc buffer
+    std::vector<char> buf_(bufSize);
+    buf = buf_.data();
+
+    // open file
+    fp = fopen(fn.c_str(), "r");
+    if( !fp ) {
+        fprintf(stderr, "ERR: can not open file: %s\n", fn.c_str());
+        return -1;
+    }
+
+    while( !feof(fp) ) {
+        // read a line
+        if( NULL == fgets(buf, bufSize, fp) )
+            break;
+
+        // remove blank & CR
+        s = trim(buf);
+
+        // skip blank line
+        if( s.size() < 1 )
+            continue;
+
+        // add to list
+        lns.push_back(s);
+    }
+
+    // close file
+    fclose(fp);
+
+    return 0;
+}
+
+
+// file functions
+uint64_t filelength(FILE *fp)
+{
+    uint64_t    len;
+
+    if( fp == NULL )
+        return 0;
+
+    fseek(fp, 0, SEEK_END);
+    len = ftell(fp);
+    fseek(fp, 0, SEEK_SET);
+
+    return len;
+}
+
+uint64_t filelength(const char *fname)
+{
+    FILE        *fp;
+    uint64_t    len;
+
+    fp = fopen(fname, "r");
+    if( fp == NULL )
+        return 0;
+
+    fseek(fp, 0, SEEK_END);
+    len = ftell(fp);
+    fclose(fp);
+
+    return len;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
 /// path utils
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -785,6 +915,80 @@ int path_rmdir(const std::string &path)
         return -1;
 }
 
+int path_rmfile(const std::string& path)
+{
+    // remove a file object
+    if ( !DeleteFileA(path.c_str()) ) {
+        fprintf(stderr, "Can`t remove a file: %s\n", path.c_str());
+        return -1;
+    }
+
+    return 0;
+}
+
+int path_isdir(const std::string &p)
+{
+    struct _stat    st;
+    int             ret;
+
+    ret = _stat(p.c_str(), &st);
+    if( ret == -1 ) {
+        fprintf(stderr, "ERR: Failed at stat: %s", p.c_str());
+        return 0;
+    }
+
+    if ( (st.st_mode & S_IFMT) == S_IFDIR )
+        return 1;
+    else
+        return 0;
+}
+
+int path_isfile(const std::string &p)
+{
+    struct _stat    st;
+    int             ret;
+
+    ret = _stat(p.c_str(), &st);
+    if( ret == -1 ) {
+        fprintf(stderr, "ERR: Failed at stat: %s", p.c_str());
+        return 0;
+    }
+
+    if ( (st.st_mode & S_IFMT) == S_IFREG )
+        return 1;
+    else
+        return 0;
+}
+
+int path_lsdir(const std::string &dir_name, StringArray &dl, int sortFiles)
+{
+    HANDLE hFind;  // file handle
+    WIN32_FIND_DATA FindFileData;
+
+    hFind = FindFirstFileA(dir_name.c_str(), &FindFileData);  // find the first file
+    if(hFind == INVALID_HANDLE_VALUE) return -1;
+
+    dl.clear();
+
+    while( 1 ) {
+        if(FindNextFileA(hFind, &FindFileData)) {
+            if(IsDots(FindFileData.cFileName)) continue;
+
+            dl.push_back(FindFileData.cFileName);
+        } else {
+            break;
+        }
+    }
+
+    FindClose(hFind);  // closing file handle
+
+    // sort all file name
+    if( sortFiles ) std::sort(dl.begin(), dl.end());
+
+    return 0;
+}
+
+
 #else // UNIX
 
 #include <string.h>
@@ -904,6 +1108,88 @@ int path_rmdir(const std::string& path)
     return 0;
 }
 
+int path_rmfile(const std::string& path)
+{
+    // remove a file object
+    if ( unlink(path.c_str()) != 0 ) {
+        fprintf(stderr, "Can`t remove a file: %s\n", path.c_str());
+        return -1;
+    }
+
+    return 0;
+}
+
+
+int path_isdir(const std::string &p)
+{
+    struct stat     st;
+    int             ret;
+
+    ret = stat(p.c_str(), &st);
+    if( ret == -1 ) {
+        fprintf(stderr, "ERR: Failed at stat: %s", p.c_str());
+        return 0;
+    }
+
+    if ( (st.st_mode & S_IFMT) == S_IFDIR )
+        return 1;
+    else
+        return 0;
+}
+
+int path_isfile(const std::string &p)
+{
+    struct stat     st;
+    int             ret;
+
+    ret = stat(p.c_str(), &st);
+    if( ret == -1 ) {
+        fprintf(stderr, "ERR: Failed at stat: %s", p.c_str());
+        return 0;
+    }
+
+    if ( (st.st_mode & S_IFMT) == S_IFREG )
+        return 1;
+    else
+        return 0;
+}
+
+
+int path_lsdir(const std::string &dir_name, StringArray &dl, int sortFiles)
+{
+    DIR             *dir;
+    struct dirent   *dp;
+
+    // open directory
+    dir = opendir(dir_name.c_str());
+    if( dir == NULL ) {
+        fprintf(stderr, "Failed to open dir: %s\n", dir_name.c_str());
+        return -1;
+    }
+
+    // get each items
+    dl.clear();
+    for(dp=readdir(dir); dp!=NULL; dp=readdir(dir)) {
+        // skip .
+        if( strlen(dp->d_name) == 1 && dp->d_name[0] == '.' )
+            continue;
+
+        // skip ..
+        if( strlen(dp->d_name) == 2 && dp->d_name[0] == '.' && dp->d_name[1] == '.' )
+            continue;
+
+        // add to list
+        dl.push_back(dp->d_name);
+    }
+
+    closedir(dir);
+
+    // sort all file name
+    if( sortFiles ) std::sort(dl.begin(), dl.end());
+
+    return 0;
+}
+
 #endif // end of _WIN32
 
 
@@ -941,5 +1227,96 @@ std::string path_getFileExt(const std::string& fname)
     } else {
         return "";
     }
+}
+
+
+StringArray path_split(const std::string &fname)
+{
+    size_t      found = -1;
+    StringArray r;
+
+    r.clear();
+
+    /* find / or \ */
+    found = fname.find_last_of("/\\");
+
+    if( found == std::string::npos ) {
+        r.push_back("");
+        r.push_back(fname);
+        return r;
+    }
+
+    // folder
+    r.push_back(fname.substr(0, found));
+    // file
+    r.push_back(fname.substr(found+1));
+
+    return r;
+}
+
+StringArray path_splitext(const std::string &fname)
+{
+    size_t      found;
+    StringArray r;
+
+    r.clear();
+
+    // find .
+    found = fname.find_last_of(".");
+    if( found == std::string::npos ) {
+        r.push_back(fname);
+        r.push_back("");
+        return r;
+    }
+
+    // filename
+    r.push_back(fname.substr(0, found));
+    // extname
+    r.push_back(fname.substr(found));
+
+    return r;
+}
+
+std::string path_join(const std::string &p1, const std::string &p2)
+{
+    std::string p;
+    int         l;
+
+    p = p1;
+
+    l = p.size();
+    if( p[l-1] == '/' || p[l-1] == '\\' )
+        p = p.substr(0, l-1);
+
+    p = p + "/" + p2;
+    return p;
+}
+
+std::string path_join(const std::string &p1, const std::string &p2, const std::string &p3)
+{
+    std::string p;
+
+    p = path_join(p1, p2);
+    return path_join(p, p3);
+}
+
+
+std::string path_join(const StringArray &p)
+{
+    int         i, l;
+    std::string p_all;
+
+    p_all = "";
+    for(i=0; i<p.size(); i++) {
+        l = p_all.size();
+        if( l>0 ) {
+            if( p_all[l-1] == '/' || p_all[l-1] == '\\' )
+                p_all = p_all.substr(0, l-1);
+        }
+
+        p_all = p_all + "/" + p[i];
+    }
+
+    return p_all;
 }
 
