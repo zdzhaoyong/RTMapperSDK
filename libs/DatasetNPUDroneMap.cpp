@@ -341,6 +341,68 @@ public:
     int             curIdx;
 };
 
+class ImageOnly : public GSLAM::Dataset {
+
+    struct FrameOnlyImg {
+        double timestamp;
+        string imagePath;
+    };
+public:
+    ImageOnly() : curIdx(0) {};
+
+    virtual std::string type() const{return "ImageOnly";}
+    virtual bool        isOpened(){return frames.size();}
+
+    virtual bool        open(const std::string& filePath) {
+        string path=Svar::getFolderPath(filePath);
+        Svar var;
+        var.ParseFile(path+"/config.imgo");
+
+        camParameters=var.get_var<VecParament<double> >("Camera.Paraments",VecParament<double>()).data;
+        camera=GSLAM::Camera(camParameters);
+        if(!camera.isValid()) return false;
+
+        ifstream ifs(path+"/frames.txt");
+        if(!ifs.is_open()) {
+            LOG(ERROR)<<"Can't open frames file.";
+            return false;
+        }
+        string line;
+        FrameOnlyImg frame;
+
+        while(getline(ifs,line))
+        {
+            stringstream sst(line);
+            string& imgfile=frame.imagePath;
+            sst>>imgfile;
+
+            stringstream st(imgfile);
+            st>>frame.timestamp;
+            imgfile=path+"/rgb/"+imgfile+".jpg";
+
+            frames.push_back(frame);
+
+        }
+
+        return frames.size();
+    }
+
+    virtual FramePtr grabFrame() {
+        int frameId = curIdx++;
+        if(frameId >= frames.size()) return FramePtr();
+        FrameOnlyImg& frameImg = frames[frameId];
+        SPtr<RTMapperFrame> fr(new RTMapperFrame(frameId, frameImg.timestamp));
+        fr->_image = RTMapperFrame::imread(frameImg.imagePath);
+        fr->_camera = camera;
+        return fr;
+    }
+
+    int curIdx;
+    GSLAM::Camera camera;
+    vector<double> camParameters;
+    vector<FrameOnlyImg> frames;
+};
 
 REGISTER_DATASET(DatasetImages,imgs);
 REGISTER_DATASET(DroneMapKFDataset,cfg);
+REGISTER_DATASET(ImageOnly,imgo);
