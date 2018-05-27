@@ -45,5 +45,8 @@ endif()
 # console example
 pi_add_target(example-console BIN example-console libs REQUIRED RTMapperSDK System)
 
+# fitgps example
+pi_add_target(example-fitgps BIN example-fitgps libs REQUIRED RTMapperSDK System)
+
 pi_report_target()
 

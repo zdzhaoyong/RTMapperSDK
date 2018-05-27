@@ -1,0 +1,7 @@
+Camera.CameraType=PinHole
+Camera.Paraments=[1920,1080,1220.000000,1220.000000,960.000000,540.000000]
+
+MinDiff=-60
+MaxDiff=60
+Precision=0.1
+FitNum=10
