@@ -390,7 +390,7 @@ public:
             return ;
         }
 
-        RTMapperPtr rtmapper=createRTMapperInstance();
+        RTMapperPtr rtmapper=RTMapper::create();
         if(!rtmapper) {
             LOG(ERROR)<<"Failed to load RTMapperSDK.";
             return;
