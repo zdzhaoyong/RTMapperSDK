@@ -223,19 +223,25 @@ public:
 
     virtual bool        open(const std::string& dataset)
     {
+        LOG(INFO)<<"Tring to open dataset "<<dataset;
         _imageFiles.clear();
         _curIdx=0;
 
-        if( !path_exist(dataset) ) return false;
+        if( !path_exist(dataset) )
+        {
+            LOG(ERROR)<<"Path "<<dataset<<" not exist!";
+            return false;
+        }
 
         _name = path_getFileBase(dataset);
         string extname = path_getFileExt(dataset);
-        if( extname == ".imgs" )
+        if( extname == "imgs" )
         {
             _topDir = path_getPathName(dataset);
             return openImages(dataset);
         }
 
+        LOG(ERROR)<<"Extension "<<extname<<" should be 'imgs'!";
         return false;
     }
 

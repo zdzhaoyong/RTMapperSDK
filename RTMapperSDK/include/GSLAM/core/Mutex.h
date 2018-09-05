@@ -1,5 +1,5 @@
-#ifndef GSLAMm_mutex__H
-#define GSLAMm_mutex__H
+#ifndef GSLAM_MUTEX__H
+#define GSLAM_MUTEX__H
 
 #ifdef HAS_PIL0
 
@@ -29,14 +29,6 @@ typedef std::unique_lock<MutexRW> WriteMutex;
 
 class Event
 {
-private:
-	Event(const Event&);
-	Event& operator = (const Event&);
-
-	bool            _auto;
-	Mutex      m_mutex;
-	std::atomic<bool> _state;
-	std::condition_variable _cond;
 public:
     Event(bool autoReset = true):_auto(autoReset),_state(false){
 
@@ -50,7 +42,7 @@ public:
             _state = false;
         if (!_state)
         {
-			ReadMutex _lock(this->m_mutex);
+            std::unique_lock<std::mutex> _lock(_mutex);
             _cond.wait(_lock);
         }
     }
@@ -68,10 +60,18 @@ public:
     }
 
     void reset(){
-        std::unique_lock<std::mutex> _lock(m_mutex);
+        std::unique_lock<std::mutex> _lock(_mutex);
         _state=false;
     }
 
+private:
+    Event(const Event&);
+    Event& operator = (const Event&);
+
+    bool            _auto;
+    std::atomic<bool> _state; 
+    std::mutex      _mutex;
+    std::condition_variable _cond;
 };
 
 }

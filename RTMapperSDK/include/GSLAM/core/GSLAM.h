@@ -414,7 +414,7 @@ inline bool SLAM::setMap(const MapPtr& map)
 {
     ReadMutex lock(_mutexMap);
     _curMap=map;
-	return true;
+    return true;
 }
 
 inline MapPtr SLAM::getMap()const

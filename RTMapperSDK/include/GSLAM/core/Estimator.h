@@ -82,6 +82,7 @@ public:
 
 
     static  SPtr<Estimator> create(std::string pluginName=""){
+        return SPtr<Estimator>();// use RTMapper internal implementation
         if(pluginName.empty())
         {
             pluginName=svar.GetString("EstimatorPlugin","libgslam_estimator");

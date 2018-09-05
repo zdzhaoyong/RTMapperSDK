@@ -1002,7 +1002,7 @@ bool path_exist(const std::string& fnpath)
 
     if( fnpath.size() == 0 ) return false;
 
-    if( 0 == stat(fnpath.c_str(), &sb) && S_ISDIR(sb.st_mode) ) {
+    if( 0 == stat(fnpath.c_str(), &sb)) {
         return true;
     } else {
         return false;

@@ -70,6 +70,7 @@ public:
             }
             rtmapper->track(frame);
         }
+        rtmapper.reset();
 
 
         if(_tileManager) if(!_tileManager->save("ortho.tif")) LOG(ERROR)<<"Failed to export tif";
