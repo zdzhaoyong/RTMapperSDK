@@ -57,6 +57,7 @@
 #include <string>
 #include <vector>
 #include <GSLAM/core/Svar.h>
+#include <math.h>
 
 namespace TinyEXIF {
 
